@@ -3,6 +3,8 @@ import requests
 import json
 import random
 import time
+import argparse
+import datetime
 
 #
 # an usage example
@@ -25,7 +27,7 @@ def print_note(note):
 #
 # get list of notes
 #
-def get_note_list():
+def getAllNotes():
     resp = requests.get(url=theUrl)
     # print(resp)
     # print(resp.status_code)
@@ -39,11 +41,24 @@ def get_note_list():
 
 def get_note_list_with_params(tagName, tagValue):
     resp = requests.get(url=theUrl + "/?type=%s&data=%s" % (tagName, tagValue))
-    return resp.json()
+    if "detail" in resp.json():
+        return []
+    else:   
+        return resp.json()
 
-def get_note_list_of_attibutes(id):
+def getNotesWithType(tagName):
+    resp = requests.get(url=theUrl + "/?type=%s" % (tagName))
+    if "detail" in resp.json():
+        return []
+    else:   
+        return resp.json()
+
+def getAttributesNotesOf(id):
     resp = requests.get(url=theUrl + "/?rid=%d" % (id))
-    return resp.json()
+    if "detail" in resp.json():
+        return []
+    else:   
+        return resp.json()
 
 
 #
@@ -88,7 +103,7 @@ def createManyStaffMembers(num, numberOfGroups):
         createStaffMember(username="username%d" % (i), email="email%d@email.it" % (i), secondaryEmail="email%d@email.it" % (i), name="name%d" % (i), surname="surname%d" % (i), groupName=getRandomGroup(numberOfGroups), leaderOfGroup="leaderOfGroup%d" % (i), qualification="qualification%d" % (i), organization="organization%d" % (i), totalHoursPerYear="totalHoursPerYear%d" % (i), totalContractualHoursPerYear="totalContractualHoursPerYear%d" % (i), parttimePercent="parttimePercent%d" % (i), isTimeSheetEnabled="isTimeSheetEnabled%d" % (i), created="created%d" % (i), validFrom="validFrom%d" % (i), validTo="validTo%d" % (i), note="note%d" % (i), officePhone="officePhone%d" % (i), officeLocation="officeLocation%d" % (i), internalNote="internalNote%d" % (i), lastChangeAuthor="lastChangeAuthor%d" % (i), lastChangeDate="lastChangeDate%d" % (i))
     print("Created %d staff members in %s seconds" % (num, time.time() - startTime))
 
-def searchStaffMemberWithGroupNameFetchingAll(groupName):
+""" def searchStaffMemberWithGroupNameFetchingAll(groupName):
     startTime = time.time()
     noteList = get_note_list()
     count = 0
@@ -99,31 +114,102 @@ def searchStaffMemberWithGroupNameFetchingAll(groupName):
                 #print_note(note)
                 #print("\n")
     print("Searched %d staff members in %s seconds - got %d members" % (len(noteList), time.time() - startTime, count))
+ """
 
 def searchStaffMemberWithGroupName(groupName):
     startTime = time.time()
     noteList = get_note_list_with_params("GROUPNAME", groupName)   
     print("Got %d staff members with GROUPNAME=%s in %s seconds" % (len(noteList), groupName, time.time() - startTime))
 
-def searchStaffMemberWithId(id):
+def getStaffMemberWithId(id):
     startTime = time.time()
-    noteList = get_note_list_of_attibutes(id)   
-    print("Got %d notes for staff member %d in %s seconds" % (len(noteList), id, time.time() - startTime))
-    
-#
-# run some tests
-#
+    noteList = getAttributesNotesOf(id)  
+    # print(noteList) 
+    # print("Got %d notes for staff member %d in %s seconds" % (len(noteList), id, time.time() - startTime))
+    return noteList
 
-createManyStaffMembers(numberOfEntities, numberOfGroups)
 
-noteList = get_note_list()
-print("Got note list: length=%d" % (len(noteList)))
-## iter over the list of notes
-#for note in noteList:
-#    print_note(note)
 
-searchStaffMemberWithGroupNameFetchingAll("Group3")
+# createManyStaffMembers(numberOfEntities, numberOfGroups)
+# searchStaffMemberWithGroupNameFetchingAll("Group3")
+# searchStaffMemberWithGroupName("Group5")
+# res = getStaffMemberWithId(24)
+# print("Got %d notes for staff member %d" % (len(
+#   res), 24))
 
-searchStaffMemberWithGroupName("Group5")
+def getCurrentDate():
+    return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
 
-searchStaffMemberWithId(24)
+def infoDb():
+    note = getNotesWithType("__SYSTEM__")
+    if len(note) == 0:
+        return []
+    else:  
+        note = getAttributesNotesOf(note[0]['id']) 
+        return note
+
+def initDb():
+    if len(infoDb()) > 0:
+        return False
+    rid = createNote(rid=0, type="__SYSTEM__", data="")
+    createNote(rid=rid, type="CREATED", data=getCurrentDate())
+    return True
+
+def deleteNote(id):
+    resp = requests.delete(url=theUrl + "/" + str(id))
+    return(resp)
+
+def resetDb():
+    noteList = getAllNotes()
+    for note in noteList:
+        deleteNote(note['id'])
+
+def countNotes():
+    noteList = getAllNotes()
+    return len(noteList)
+
+def printNotes():
+    noteList = getAllNotes()
+    for note in noteList:
+        print_note(note)
+
+def main():
+    parser = argparse.ArgumentParser()
+    parser.add_argument('--initDb', help='Initialize the database', action='store_true')
+    parser.add_argument('--resetDb', help='Reset the database. WARNING: ALL DATA WILL BE DELETED', action='store_true')
+    parser.add_argument('--infoDb', help='Show some info on the database', action='store_true')
+    parser.add_argument('--countNotes', help='Count all the notes present in the database', action='store_true')  
+    parser.add_argument('--printNotes', help='Print all the notes present in the database', action='store_true')
+    args = parser.parse_args()
+    for k, arg in args.__dict__.items():
+        match k:
+            case 'initDb':
+                if arg:
+                    print("Initializing the database")
+                    if initDb():
+                        print("Database initialized")
+                    else:
+                        print("Database already initialized")
+            case 'resetDb':
+                if arg:
+                    print("Resetting the database")
+                    resetDb()
+            case 'infoDb':
+                if arg:
+                    print("Show info about the database")
+                    res = infoDb()
+                    if len(res) > 0:
+                        print(res)
+                    else:
+                        print("Database not initialized")   
+            case 'countNotes':
+                if arg:
+                    print("Counting the notes in the database: %d" % (countNotes()))
+            case 'printNotes':
+                if arg:
+                    print("Printing the notes in the database:")
+                    printNotes()
+            case _:
+                print("Unmanaged flag: %s" % (k))
+
+main()
