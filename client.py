@@ -178,8 +178,10 @@ def main():
     parser.add_argument('--countEntities', help='Count all the entities present in the database', action='store_true')
     parser.add_argument('--listEntities', help='List all the entities of given type', metavar='TYPE')  
     parser.add_argument('--printNotes', help='Print all the notes present in the database', action='store_true')
-    parser.add_argument('--createEntity', help='Create a new entity from the given JSON', metavar='{"__ENT__":"PC", "OWNER":"name1", "LOCATION":"office1"}')
-    parser.add_argument('--searchEntity', help='Search an entity from the given JSON (search on 1 property only)', metavar='{"__ENT__":"PC", "OWNER":"name1"}')
+    parser.add_argument('--createEntity', help='Create a new entity from the given JSON', 
+                        metavar='{"__ENT__":"PC", "OWNER":"name1", "LOCATION":"office1"}')
+    parser.add_argument('--searchEntity', help='Search an entity from the given JSON (search on 1 property only)', 
+                        metavar='{"__ENT__":"PC", "OWNER":"name1"}')
     parser.add_argument('--getEntity', help='Get an entity', type=int, metavar='ID')
     parser.add_argument('--createManyStaffMembers', help='Create may staff members', type=int, metavar='NUM')
 
