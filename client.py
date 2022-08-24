@@ -7,54 +7,15 @@ import argparse
 import datetime
 
 #
-# an usage example
+# a command line interface to REST API of notes
 #
 
 theUrl = "http://127.0.0.1:8000/note"
 numberOfEntities = 10
 numberOfGroups = 10
 
-# print a note
-def print_note(note):
-    print(note)
-    # print(note['id'])
-    # print(note['rid'])
-    # print(note['lid'])
-    # print(note['type'])
-    # print(note['data'])
-    # print("\n")
-
-#
-# get list of notes
-#
-def getAllNotes():
-    resp = requests.get(url=theUrl)
-    # print(resp)
-    # print(resp.status_code)
-    # print(resp.json())
-    if (resp.status_code == 200):
-        return resp.json()
-    else:
-        # TODO - some error handling
-        print(resp)
-        return []
-
 def get_note_list_with_params(tagName, tagValue):
     resp = requests.get(url=theUrl + "/?type=%s&data=%s" % (tagName, tagValue))
-    if "detail" in resp.json():
-        return []
-    else:   
-        return resp.json()
-
-def getNotesWithType(tagName):
-    resp = requests.get(url=theUrl + "/?type=%s" % (tagName))
-    if "detail" in resp.json():
-        return []
-    else:   
-        return resp.json()
-
-def getAttributesNotesOf(id):
-    resp = requests.get(url=theUrl + "/?rid=%d" % (id))
     if "detail" in resp.json():
         return []
     else:   
@@ -103,19 +64,6 @@ def createManyStaffMembers(num, numberOfGroups):
         createStaffMember(username="username%d" % (i), email="email%d@email.it" % (i), secondaryEmail="email%d@email.it" % (i), name="name%d" % (i), surname="surname%d" % (i), groupName=getRandomGroup(numberOfGroups), leaderOfGroup="leaderOfGroup%d" % (i), qualification="qualification%d" % (i), organization="organization%d" % (i), totalHoursPerYear="totalHoursPerYear%d" % (i), totalContractualHoursPerYear="totalContractualHoursPerYear%d" % (i), parttimePercent="parttimePercent%d" % (i), isTimeSheetEnabled="isTimeSheetEnabled%d" % (i), created="created%d" % (i), validFrom="validFrom%d" % (i), validTo="validTo%d" % (i), note="note%d" % (i), officePhone="officePhone%d" % (i), officeLocation="officeLocation%d" % (i), internalNote="internalNote%d" % (i), lastChangeAuthor="lastChangeAuthor%d" % (i), lastChangeDate="lastChangeDate%d" % (i))
     print("Created %d staff members in %s seconds" % (num, time.time() - startTime))
 
-""" def searchStaffMemberWithGroupNameFetchingAll(groupName):
-    startTime = time.time()
-    noteList = get_note_list()
-    count = 0
-    for note in noteList:
-        if (note['type'] == "GROUPNAME"):
-            if (note['data'] == groupName):
-                count = count + 1
-                #print_note(note)
-                #print("\n")
-    print("Searched %d staff members in %s seconds - got %d members" % (len(noteList), time.time() - startTime, count))
- """
-
 def searchStaffMemberWithGroupName(groupName):
     startTime = time.time()
     noteList = get_note_list_with_params("GROUPNAME", groupName)   
@@ -138,14 +86,38 @@ def getStaffMemberWithId(id):
 #   res), 24))
 
 def getCurrentDate():
-    return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S")
+    return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%S+0000")
+
+def printNote(note):
+    print(note)
+    # print("%i,%i,%i,%s,%s\n" % (note['id'],note['rid'],note['lid'],note['type'],note['data']))
+
+def auxGetAndReturnList(url):
+    resp = requests.get(url=url)
+    if (resp.status_code == 200):
+        return resp.json()
+    else:
+        return []
+
+def getAllNotes():
+    return auxGetAndReturnList(theUrl)
+
+def getNotesWithType(tagName):
+    return auxGetAndReturnList(theUrl + "/?type=%s" % (tagName))
+
+def getAttributesOfNote(id):
+    return auxGetAndReturnList(theUrl + "/?rid=%d" % (id))
+
+#
+# Available operations
+#         
 
 def infoDb():
     note = getNotesWithType("__SYSTEM__")
     if len(note) == 0:
         return []
     else:  
-        note = getAttributesNotesOf(note[0]['id']) 
+        note = getAttributesOfNote(note[0]['id']) 
         return note
 
 def initDb():
@@ -171,7 +143,7 @@ def countNotes():
 def printNotes():
     noteList = getAllNotes()
     for note in noteList:
-        print_note(note)
+        printNote(note)
 
 def main():
     parser = argparse.ArgumentParser()
@@ -183,6 +155,14 @@ def main():
     args = parser.parse_args()
     for k, arg in args.__dict__.items():
         match k:
+            case 'infoDb':
+                if arg:
+                    print("Show info about the database:")
+                    res = infoDb()
+                    if len(res) > 0:
+                        print(res)
+                    else:
+                        print("Database not initialized.")   
             case 'initDb':
                 if arg:
                     print("Initializing the database")
@@ -194,14 +174,6 @@ def main():
                 if arg:
                     print("Resetting the database")
                     resetDb()
-            case 'infoDb':
-                if arg:
-                    print("Show info about the database")
-                    res = infoDb()
-                    if len(res) > 0:
-                        print(res)
-                    else:
-                        print("Database not initialized")   
             case 'countNotes':
                 if arg:
                     print("Counting the notes in the database: %d" % (countNotes()))
