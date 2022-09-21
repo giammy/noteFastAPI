@@ -17,7 +17,10 @@ import datetime
 # ./client.py --searchEntity '{"__ENT__":"STAFFMEMBER", "GROUPNAME":"Group2"}'
 # ./client.py --getEntity 6 
 
-theUrl = "http://127.0.0.1:8000/note"
+# theUrl = "http://127.0.0.1:8000/note"
+#theUrl = "http://192.168.1.80/note"
+# theUrl = "http://gea.noip.me/note"
+theUrl = "http://localhost:8080/note" # Django
 
 #
 # the following 2 functions create an example entity called STAFFMEMBER, 
